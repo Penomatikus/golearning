@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	api "github.com/penomatikus/golearning/go_websockets"
 )
 
 func main() {
@@ -13,28 +14,6 @@ func main() {
 	ws.handle("/chat")
 	ws.serve(":8080")
 }
-
-// <--
-// oversimplified contract
-type (
-	operation string
-	message   struct {
-		Username  string
-		Message   string
-		Operation operation
-	}
-)
-
-const (
-	// will broadcast the message
-	Broadcast operation = "\\b"
-	// will print the current sever time
-	Servertime operation = "\\t"
-	// will tell the sever about logging out
-	Logout operation = "\\q"
-)
-
-// <--
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -66,7 +45,7 @@ func newWsServer() wsServer {
 }
 
 func (ws *wsServer) serve(port string) {
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(api.DefaultAddr, nil))
 }
 
 func (ws *wsServer) handle(route string) {
@@ -99,16 +78,16 @@ func (ws *wsServer) handle(route string) {
 // listen on conn until an error occures
 func (ws *wsServer) listen(wsConn *wsConnection) error {
 	for {
-		var m message
+		var m api.Message
 		err := wsConn.conn.ReadJSON(&m)
 		if err != nil {
 			return err
 		}
 
 		switch m.Operation {
-		case Broadcast:
+		case api.Broadcast:
 			ws.broadcast(m.Message)
-		case Servertime:
+		case api.Servertime:
 			log.Printf("%s: Servertime is  %s", m.Username, time.Now().Format(time.RFC1123))
 		default:
 			log.Printf("%s: %s", m.Username, m.Message)

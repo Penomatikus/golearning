@@ -10,35 +10,14 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
+	api "github.com/penomatikus/golearning/go_websockets"
 )
-
-// <--
-// oversimplified contract
-type (
-	operation string
-	message   struct {
-		Username  string
-		Message   string
-		Operation operation
-	}
-)
-
-const (
-	// will broadcast the message
-	Broadcast operation = "\\b"
-	// will print the current sever time
-	Servertime operation = "\\t"
-	// will tell the sever about logging out
-	Logout operation = "\\q"
-)
-
-// -->
 
 func main() {
 	name := flag.String("name", "user", "A username to display")
 	flag.Parse()
 
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/chat"}
+	u := url.URL{Scheme: "ws", Host: api.DefaultHost, Path: api.DefaultRoute}
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dail:", err)
@@ -46,7 +25,7 @@ func main() {
 	defer conn.Close()
 	go updates(conn, *name)
 
-	messagechan := make(chan message)
+	messagechan := make(chan api.Message)
 	closechan := make(chan struct{})
 	go chat(*name, messagechan, closechan)
 
@@ -69,26 +48,26 @@ func main() {
 	}
 }
 
-func chat(username string, m chan message, c chan<- struct{}) {
+func chat(username string, m chan api.Message, c chan<- struct{}) {
 	for {
 		fmt.Printf("%s: > ", username)
 
 		r := bufio.NewReader(os.Stdin)
 		in, _ := r.ReadString('\n')
-		chatData := message{
+		chatData := api.Message{
 			Username: username,
 			Message:  strings.TrimSuffix(in, "\n"),
 		}
 
-		if strings.Contains(in, string(Servertime)) {
-			chatData.Operation = Servertime
+		if strings.Contains(in, string(api.Servertime)) {
+			chatData.Operation = api.Servertime
 		}
 
-		if strings.Contains(in, string(Broadcast)) {
-			chatData.Operation = Broadcast
+		if strings.Contains(in, string(api.Broadcast)) {
+			chatData.Operation = api.Broadcast
 		}
 
-		if strings.Contains(in, string(Logout)) {
+		if strings.Contains(in, string(api.Logout)) {
 			c <- struct{}{}
 			return
 		}
