@@ -86,7 +86,7 @@ func (ws *wsServer) listen(wsConn *wsConnection) error {
 
 		switch m.Operation {
 		case api.Broadcast:
-			ws.broadcast(m.Message)
+			ws.broadcast(m.Message, wsConn.id)
 		case api.Servertime:
 			log.Printf("%s: Servertime is  %s", m.Username, time.Now().Format(time.RFC1123))
 		default:
@@ -95,11 +95,13 @@ func (ws *wsServer) listen(wsConn *wsConnection) error {
 	}
 }
 
-func (ws *wsServer) broadcast(broadcast string) {
-	for i := range ws.pool {
-		err := ws.pool[i].conn.WriteMessage(websocket.TextMessage, []byte(broadcast))
-		if err != nil {
-			log.Fatalf("broadcast: %s", err)
+func (ws *wsServer) broadcast(broadcast string, broadcasterID connID) {
+	for k := range ws.pool {
+		if k != broadcasterID {
+			err := ws.pool[k].conn.WriteMessage(websocket.TextMessage, []byte(broadcast))
+			if err != nil {
+				log.Fatalf("broadcast: %s", err)
+			}
 		}
 	}
 }
