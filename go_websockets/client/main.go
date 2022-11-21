@@ -23,11 +23,11 @@ func main() {
 		log.Fatal("dail:", err)
 	}
 	defer conn.Close()
-	go updates(conn, *name)
 
 	messagechan := make(chan api.Message)
 	closechan := make(chan struct{})
 	go chat(*name, messagechan, closechan)
+	go updates(conn, *name)
 
 	for {
 		select {
@@ -82,6 +82,6 @@ func updates(conn *websocket.Conn, username string) {
 			log.Println("read:", err)
 			return
 		}
-		fmt.Printf("\nServer message: %s\n%s: >", message, username)
+		fmt.Printf("\nServer message: %s\n%s: > ", message, username)
 	}
 }
