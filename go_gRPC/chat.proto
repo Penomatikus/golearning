@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+//package declaration of the generated stub
+package protoAPI;
+
+option go_package = "github.com/penomatikus/golearning/go_gRPC/test";
+
+
+message Message {
+  string body = 1;
+}
+
+service ChatService {
+  rpc SayHello(Message) returns (Message) {}
+}
