@@ -2,7 +2,15 @@ go 1.19
 
 // go_websockets
 use (
+    ./go_websockets
     ./go_websockets/server
     ./go_websockets/client    
    )
+
+// go_gRPC
+use (
+    ./go_gRPC
+    ./go_gRPC/server
+   )
+
 
