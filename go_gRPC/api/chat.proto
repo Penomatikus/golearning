@@ -1,9 +1,9 @@
 syntax = "proto3";
 
 //package declaration of the generated stub
-package protoAPI;
+package api;
 
-option go_package = "github.com/penomatikus/golearning/go_gRPC/test";
+option go_package = "github.com/penomatikus/golearning/go_gRPC/api";
 
 
 message Message {
