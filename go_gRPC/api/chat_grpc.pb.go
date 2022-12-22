@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.12
-// source: api/chat.proto
+// source: chat.proto
 
 package api
 
@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatServiceClient interface {
-	WriteMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error)
+	WriteMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RegisterClient(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -35,8 +35,8 @@ func NewChatServiceClient(cc grpc.ClientConnInterface) ChatServiceClient {
 	return &chatServiceClient{cc}
 }
 
-func (c *chatServiceClient) WriteMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error) {
-	out := new(Message)
+func (c *chatServiceClient) WriteMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/api.ChatService/WriteMessage", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (c *chatServiceClient) RegisterClient(ctx context.Context, in *emptypb.Empt
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility
 type ChatServiceServer interface {
-	WriteMessage(context.Context, *Message) (*Message, error)
+	WriteMessage(context.Context, *Message) (*emptypb.Empty, error)
 	RegisterClient(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedChatServiceServer()
 }
@@ -66,7 +66,7 @@ type ChatServiceServer interface {
 type UnimplementedChatServiceServer struct {
 }
 
-func (UnimplementedChatServiceServer) WriteMessage(context.Context, *Message) (*Message, error) {
+func (UnimplementedChatServiceServer) WriteMessage(context.Context, *Message) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteMessage not implemented")
 }
 func (UnimplementedChatServiceServer) RegisterClient(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
@@ -138,5 +138,5 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/chat.proto",
+	Metadata: "chat.proto",
 }

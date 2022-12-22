@@ -13,6 +13,6 @@ message Message {
 }
 
 service ChatService {
-  rpc WriteMessage(Message) returns (Message) {}
+  rpc WriteMessage(Message) returns (google.protobuf.Empty) {}
   rpc RegisterClient(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }
