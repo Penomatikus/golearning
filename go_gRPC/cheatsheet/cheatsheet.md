@@ -23,7 +23,7 @@ The compiler for this project was called as followed in the `go_gRPC/api` direct
 - `_grpc.pb.go` contains the following:
   - An interface type (or stub) for clients to call with the methods defined in the service
   - An interface type for servers to implement, also with the methods defined in the service
-  
+
 ---
 
 ## Compiler options
@@ -40,7 +40,7 @@ protoc --go_out=<any path>
 
 The `--go_opt=paths=source_relative` flag causes the compiler to use the path to the .proto file from the argument list. Use `--go_out=` to specify the start directory from where the compiler should create the out. The directory must exist.
 
-- **Example:** When `./go_gRPC/foo/bar/chat.proto` would exist, `protoc --go_out=server --go_opt=paths=source_relative foo/bar/chat.proto` would create `./go_gRPC/server/foo/bar/chat.pb.go`.
+- **Example:** When `./go_gRPC/api/foo/bar/chat.proto` would exist, `protoc --go_out=. --go_opt=paths=source_relative foo/bar/chat.proto` would create `./go_gRPC/api/foo/bar/chat.pb.go`.
 - **Example II:** For this project `protoc --go_out=. --go_opt=paths=source_relative api/chat.proto` would create `chat.pb.proto` in the root directory `go_gRPC/api`
 
 ```bash
