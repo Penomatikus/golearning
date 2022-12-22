@@ -5,12 +5,12 @@ import (
 	"errors"
 	"log"
 	"net"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/google/uuid"
 	api "github.com/penomatikus/golearning/go_gRPC/api"
 )
 
@@ -24,6 +24,11 @@ func newService() *chatServiceServerImpl {
 	return &chatServiceServerImpl{
 		registeredClients: make([]string, 0),
 	}
+}
+
+type chatServiceServerImpl struct {
+	api.UnimplementedChatServiceServer
+	registeredClients []string
 }
 
 func (impl *chatServiceServerImpl) listenAndServe() {
@@ -40,26 +45,44 @@ func (impl *chatServiceServerImpl) listenAndServe() {
 	}
 }
 
-type chatServiceServerImpl struct {
-	api.UnimplementedChatServiceServer
-	registeredClients []string
-}
-
 func (impl *chatServiceServerImpl) RegisterClient(ctx context.Context, e *emptypb.Empty) (*emptypb.Empty, error) {
 	_, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return impl.provideEmpty(), errors.New("no metadata found for register process")
+		return emptyMessage(), errors.New("no metadata found for register process")
 	}
 
-	token := time.Now().GoString()
+	token := uuid.New().String()
 	trailer := metadata.New(map[string]string{"token": token})
 	grpc.SetTrailer(ctx, trailer)
 
 	impl.registeredClients = append(impl.registeredClients, token)
-	return impl.provideEmpty(), nil
+	return emptyMessage(), nil
 }
 
-func (impl *chatServiceServerImpl) provideEmpty() *emptypb.Empty {
+func (impl *chatServiceServerImpl) WriteMessage(ctx context.Context, in *api.Message) (e *emptypb.Empty, err error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return emptyMessage(), errors.New("no metadata found for register process")
+	}
+	if md.Len() == 0 {
+		return emptyMessage(), errors.New("empty metadata found for register process")
+	}
+
+	registered := false
+	for _, s := range impl.registeredClients {
+		if s == md.Get("token")[0] {
+			registered = true
+		}
+	}
+
+	if !registered {
+		return emptyMessage(), errors.New("not registered")
+	}
+
+	return
+}
+
+func emptyMessage() *emptypb.Empty {
 	empty := emptypb.Empty{}
 	return &empty
 }

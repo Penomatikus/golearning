@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 
 	"google.golang.org/grpc"
@@ -14,46 +13,73 @@ import (
 	api "github.com/penomatikus/golearning/go_gRPC/api"
 )
 
-const defaultHost = ":9000"
-
-var /* const */ defaultDailOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
-
 func main() {
 	name := flag.String("name", "user", "A username to display")
 	flag.Parse()
 
 	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, defaultHost, defaultDailOpt)
-	if err != nil {
-		panic("Could not connect to server")
-	}
+
+	chatClient := newChatClient(*name)
+	conn := chatClient.dailAndConnect(ctx)
 	defer conn.Close()
 
-	// messagechan := make(chan api.Message)
-	// closechan := make(chan struct{})
+	chatClient.registerWithContext(ctx)
+	print(chatClient.serverAuthToken)
 
-	client := api.NewChatServiceClient(conn)
-	// body := fmt.Sprintf("Hello From Client \"%s\"!", *name)
+}
 
-	// response, err := client.SayHello(context.Background(), &api.Message{Body: body})
-	md := metadata.New(map[string]string{"name": *name})
+type chatClient struct {
+	api.ChatServiceClient
+	name            string
+	serverAuthToken serverAuthToken
+}
+
+func newChatClient(name string) *chatClient {
+	return &chatClient{
+		name: name,
+	}
+}
+
+func (cc *chatClient) dailAndConnect(ctx context.Context) *grpc.ClientConn {
+	defaultHost := ":9000"
+	defaultDailOpt := grpc.WithTransportCredentials(insecure.NewCredentials())
+	conn, err := grpc.DialContext(ctx, defaultHost, defaultDailOpt)
+	if err != nil {
+		log.Fatalf("Could not connect to server: %s", err)
+	}
+	cc.ChatServiceClient = api.NewChatServiceClient(conn)
+	return conn
+}
+
+type serverAuthToken string
+
+// registerWithContext "fakes" a register process to the server for later a later "authtoken"
+// The server receives metadata which content is irrelevant but must exists and sends a UUID in
+// the trailer back. This is just for playing around with metadata and trailers
+func (cc *chatClient) registerWithContext(ctx context.Context) {
+	md := metadata.New(map[string]string{"name": cc.name})
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	empty := emptypb.Empty{}
-	var header, trailer metadata.MD
-	_, err = client.RegisterClient(
+	var trailer metadata.MD
+	_, err := cc.RegisterClient(
 		ctx,
-		&empty,
-		grpc.Header(&header),   // will retrieve header
-		grpc.Trailer(&trailer), // will retrieve trailer)
+		emptyMessage(),
+		grpc.Trailer(&trailer),
 	)
 	if err != nil {
 		log.Fatalf("Error in RegisterClient(): %s", err)
 	}
 
-	fmt.Printf("header: %v\n", header)
-	fmt.Printf("trailer: %v", trailer)
+	if len(trailer.Get("token")) == 0 {
+		log.Fatal("Error in RegisterClienet(): The sever didn't send a token.")
+	}
 
+	cc.serverAuthToken = serverAuthToken(trailer.Get("token")[0])
+}
+
+func emptyMessage() *emptypb.Empty {
+	empty := emptypb.Empty{}
+	return &empty
 }
 
 // func chat(username string, m chan api.Message, c chan<- struct{}) {
