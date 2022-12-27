@@ -1,11 +1,10 @@
-module github.com/penomatikus/golearning/go_gRPC/server
+module github.com/penomatikus/golearning/go_gRPC/client
 
 go 1.19
 
 replace github.com/penomatikus/golearning/go_gRPC/shared/api => ./../shared/api
 
 require (
-	github.com/google/uuid v1.3.0
 	github.com/penomatikus/golearning/go_gRPC/shared/api v0.0.0-00010101000000-000000000000
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1

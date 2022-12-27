@@ -23,7 +23,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatServiceClient interface {
-	WriteMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Publish messages in bidirectional streaming
+	PublishMessage(ctx context.Context, opts ...grpc.CallOption) (ChatService_PublishMessageClient, error)
+	// This is a playground for working with metadata, no params wanted here
 	RegisterClient(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -35,13 +37,35 @@ func NewChatServiceClient(cc grpc.ClientConnInterface) ChatServiceClient {
 	return &chatServiceClient{cc}
 }
 
-func (c *chatServiceClient) WriteMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/api.ChatService/WriteMessage", in, out, opts...)
+func (c *chatServiceClient) PublishMessage(ctx context.Context, opts ...grpc.CallOption) (ChatService_PublishMessageClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[0], "/api.ChatService/PublishMessage", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &chatServicePublishMessageClient{stream}
+	return x, nil
+}
+
+type ChatService_PublishMessageClient interface {
+	Send(*ChatMessage) error
+	Recv() (*emptypb.Empty, error)
+	grpc.ClientStream
+}
+
+type chatServicePublishMessageClient struct {
+	grpc.ClientStream
+}
+
+func (x *chatServicePublishMessageClient) Send(m *ChatMessage) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *chatServicePublishMessageClient) Recv() (*emptypb.Empty, error) {
+	m := new(emptypb.Empty)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *chatServiceClient) RegisterClient(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
@@ -57,7 +81,9 @@ func (c *chatServiceClient) RegisterClient(ctx context.Context, in *emptypb.Empt
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility
 type ChatServiceServer interface {
-	WriteMessage(context.Context, *Message) (*emptypb.Empty, error)
+	// Publish messages in bidirectional streaming
+	PublishMessage(ChatService_PublishMessageServer) error
+	// This is a playground for working with metadata, no params wanted here
 	RegisterClient(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedChatServiceServer()
 }
@@ -66,8 +92,8 @@ type ChatServiceServer interface {
 type UnimplementedChatServiceServer struct {
 }
 
-func (UnimplementedChatServiceServer) WriteMessage(context.Context, *Message) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method WriteMessage not implemented")
+func (UnimplementedChatServiceServer) PublishMessage(ChatService_PublishMessageServer) error {
+	return status.Errorf(codes.Unimplemented, "method PublishMessage not implemented")
 }
 func (UnimplementedChatServiceServer) RegisterClient(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterClient not implemented")
@@ -85,22 +111,30 @@ func RegisterChatServiceServer(s grpc.ServiceRegistrar, srv ChatServiceServer) {
 	s.RegisterService(&ChatService_ServiceDesc, srv)
 }
 
-func _ChatService_WriteMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Message)
-	if err := dec(in); err != nil {
+func _ChatService_PublishMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChatServiceServer).PublishMessage(&chatServicePublishMessageServer{stream})
+}
+
+type ChatService_PublishMessageServer interface {
+	Send(*emptypb.Empty) error
+	Recv() (*ChatMessage, error)
+	grpc.ServerStream
+}
+
+type chatServicePublishMessageServer struct {
+	grpc.ServerStream
+}
+
+func (x *chatServicePublishMessageServer) Send(m *emptypb.Empty) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chatServicePublishMessageServer) Recv() (*ChatMessage, error) {
+	m := new(ChatMessage)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(ChatServiceServer).WriteMessage(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.ChatService/WriteMessage",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChatServiceServer).WriteMessage(ctx, req.(*Message))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 func _ChatService_RegisterClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -129,14 +163,17 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ChatServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "WriteMessage",
-			Handler:    _ChatService_WriteMessage_Handler,
-		},
-		{
 			MethodName: "RegisterClient",
 			Handler:    _ChatService_RegisterClient_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "PublishMessage",
+			Handler:       _ChatService_PublishMessage_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "chat.proto",
 }

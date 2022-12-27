@@ -7,10 +7,11 @@ use (
     ./go_websockets/client    
    )
 
-// go_gRPC
-use (
-    ./go_gRPC
-    ./go_gRPC/server
-   )
 
+// go_grpc
+use (
+    ./go_gRPC/client
+    ./go_gRPC/server
+    ./go_gRPC/shared/api
+)
 

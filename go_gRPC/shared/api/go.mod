@@ -1,4 +1,4 @@
-module github.com/penomatikus/golearning/go_gRPC
+module github.com/penomatikus/golearning/go_gRPC/shared/api
 
 go 1.19
 

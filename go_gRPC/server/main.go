@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 	"net"
 
@@ -11,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/google/uuid"
-	api "github.com/penomatikus/golearning/go_gRPC/api"
+	api "github.com/penomatikus/golearning/go_gRPC/shared/api"
 )
 
 func main() {
@@ -29,6 +30,13 @@ func newService() *chatServiceServerImpl {
 type chatServiceServerImpl struct {
 	api.UnimplementedChatServiceServer
 	registeredClients []string
+}
+
+type broker struct {
+}
+
+func (b *broker) broadcast() {
+
 }
 
 func (impl *chatServiceServerImpl) listenAndServe() {
@@ -59,27 +67,18 @@ func (impl *chatServiceServerImpl) RegisterClient(ctx context.Context, e *emptyp
 	return emptyMessage(), nil
 }
 
-func (impl *chatServiceServerImpl) WriteMessage(ctx context.Context, in *api.Message) (e *emptypb.Empty, err error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return emptyMessage(), errors.New("no metadata found for register process")
-	}
-	if md.Len() == 0 {
-		return emptyMessage(), errors.New("empty metadata found for register process")
-	}
-
-	registered := false
-	for _, s := range impl.registeredClients {
-		if s == md.Get("token")[0] {
-			registered = true
+func (impl *chatServiceServerImpl) PublishMessage(stream api.ChatService_PublishMessageServer) error {
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
 		}
-	}
+		if err != nil {
+			return err
+		}
 
-	if !registered {
-		return emptyMessage(), errors.New("not registered")
+		log.Print(in.GetMessage())
 	}
-
-	return
 }
 
 func emptyMessage() *emptypb.Empty {

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+//package declaration of the generated stub
+package api;
+
+// short for "github.com/penomatikus/golearning/go_gRPC/shared/api"
+option go_package = ".;api";
+
+
+message ChatMessage {
+  string message = 1;
+}
+
+service ChatService {
+  // Publish messages in bidirectional streaming 
+  rpc PublishMessage(stream ChatMessage) returns (stream google.protobuf.Empty) {}
+  // This is a playground for working with metadata, no params wanted here
+  rpc RegisterClient(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+}

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	api "github.com/penomatikus/golearning/go_gRPC/api"
+	api "github.com/penomatikus/golearning/go_gRPC/shared/api"
 )
 
 func main() {
@@ -53,7 +53,7 @@ func (cc *chatClient) dailAndConnect(ctx context.Context) *grpc.ClientConn {
 
 type serverAuthToken string
 
-// registerWithContext "fakes" a register process to the server for later a later "authtoken"
+// registerWithContext "fakes" a register process to the server for later a "authtoken"
 // The server receives metadata which content is irrelevant but must exists and sends a UUID in
 // the trailer back. This is just for playing around with metadata and trailers
 func (cc *chatClient) registerWithContext(ctx context.Context) {
